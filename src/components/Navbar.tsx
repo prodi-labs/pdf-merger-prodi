@@ -1,15 +1,11 @@
-import prodiLogo from '@/assets/prodi-logo.png';
-
 const Navbar = () => {
   return (
     <nav className="w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center">
-          <img 
-            src={prodiLogo} 
-            alt="Prodi Logo" 
-            className="h-8 w-auto"
-          />
+        <div className="flex items-center justify-end">
+          <h1 className="text-xl font-semibold text-foreground">
+            Prodi
+          </h1>
         </div>
       </div>
     </nav>
