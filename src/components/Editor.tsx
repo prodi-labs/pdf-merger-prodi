@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/sonner';
 import { ArrowLeft, Download, FileText, Merge, Plus, X, GripVertical } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
@@ -129,7 +128,6 @@ const SortablePDFCard = ({ file, index, preview, onRemove }: SortablePDFCardProp
 
 const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }: EditorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [pdfPreviews, setPdfPreviews] = useState<{[key: string]: string}>({});
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -262,11 +260,9 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
     }
 
     setIsProcessing(true);
-    setProgress(0);
 
     try {
       const mergedPdf = await PDFDocument.create();
-      const totalFiles = files.length;
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -275,12 +271,9 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
         const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
         
         pages.forEach((page) => mergedPdf.addPage(page));
-        
-        setProgress(((i + 1) / totalFiles) * 90);
       }
 
       const mergedPdfBytes = await mergedPdf.save();
-      setProgress(100);
 
       // Auto-download the merged PDF
       const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
@@ -296,13 +289,14 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
       // Clean up the object URL
       URL.revokeObjectURL(url);
 
-      toast.success('PDFs merged successfully and downloaded!');
+      toast.success('PDFs merged successfully and downloaded!', {
+        duration: 3000
+      });
     } catch (error) {
       console.error('Error merging PDFs:', error);
       toast.error('Failed to merge PDFs. Please try again.');
     } finally {
       setIsProcessing(false);
-      setProgress(0);
     }
   };
 
@@ -434,13 +428,6 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
                 <Plus className="h-4 w-4 mr-2" />
                 Add More PDFs
               </Button>
-
-              {isProcessing && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Merging Progress</p>
-                  <Progress value={progress} className="w-full" />
-                </div>
-              )}
 
               <Button
                 onClick={mergePDFs}
