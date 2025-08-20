@@ -7,8 +7,10 @@ import { ArrowLeft, Download, FileText, Merge, Plus } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker with a local approach to avoid CDN issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = `data:application/javascript;base64,${btoa(`
+  importScripts('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js');
+`)}`;
 
 interface EditorProps {
   files: File[];
@@ -30,33 +32,39 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
       for (const file of files) {
         try {
           const arrayBuffer = await file.arrayBuffer();
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          const pdf = await loadingTask.promise;
           const page = await pdf.getPage(1);
           
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
           if (!context) continue;
           
-          const viewport = page.getViewport({ scale: 0.5 });
+          const viewport = page.getViewport({ scale: 0.8 });
           canvas.height = viewport.height;
           canvas.width = viewport.width;
           
-          await page.render({
+          const renderContext = {
             canvasContext: context,
             viewport: viewport,
             canvas: canvas
-          }).promise;
+          };
           
+          await page.render(renderContext).promise;
           previews[file.name] = canvas.toDataURL();
         } catch (error) {
           console.error('Error generating preview for', file.name, error);
+          // Set a fallback empty preview
+          previews[file.name] = '';
         }
       }
       
       setPdfPreviews(previews);
     };
 
-    generatePreviews();
+    if (files.length > 0) {
+      generatePreviews();
+    }
   }, [files]);
 
   const mergePDFs = async () => {
@@ -153,54 +161,42 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* PDF Previews */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Selected PDF Files ({files.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-4 p-4 border border-border rounded-lg"
-                  >
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4">Selected PDF Files ({files.length})</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {files.map((file, index) => (
+                <Card key={index} className="overflow-hidden">
+                  <CardContent className="p-4">
                     {/* PDF Preview */}
-                    <div className="flex-shrink-0">
+                    <div className="aspect-[3/4] mb-3 bg-muted rounded border flex items-center justify-center overflow-hidden">
                       {pdfPreviews[file.name] ? (
                         <img
                           src={pdfPreviews[file.name]}
                           alt={`Preview of ${file.name}`}
-                          className="w-20 h-28 object-cover rounded border shadow-sm"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
-                        <div className="w-20 h-28 bg-muted rounded border flex items-center justify-center">
-                          <FileText className="h-8 w-8 text-muted-foreground" />
+                        <div className="flex flex-col items-center gap-2">
+                          <FileText className="h-12 w-12 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">Loading preview...</span>
                         </div>
                       )}
                     </div>
                     
                     {/* PDF Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{file.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {(file.size / (1024 * 1024)).toFixed(2)} MB
-                          </p>
-                        </div>
-                        <div className="text-sm text-muted-foreground ml-4">
-                          #{index + 1}
-                        </div>
-                      </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm truncate" title={file.name}>
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {(file.size / (1024 * 1024)).toFixed(2)} MB • File #{index + 1}
+                      </p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Actions */}
