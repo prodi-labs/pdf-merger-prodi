@@ -69,18 +69,11 @@ const SortablePDFCard = ({ file, index, preview, onRemove }: SortablePDFCardProp
     <Card 
       ref={setNodeRef} 
       style={style} 
-      className={`overflow-hidden group relative hover:shadow-lg transition-shadow ${isDragging ? 'z-50' : ''}`}
+      {...attributes}
+      {...listeners}
+      className={`overflow-hidden group relative hover:shadow-lg transition-shadow cursor-grab active:cursor-grabbing hover:cursor-grab ${isDragging ? 'z-50' : ''}`}
     >
       <CardContent className="p-4">
-        {/* Drag handle */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute top-3 left-3 z-10 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-gray-50"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical className="h-3 w-3 text-gray-600" />
-        </div>
 
         {/* Delete button - only visible on hover */}
         <button
