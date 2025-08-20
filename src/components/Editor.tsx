@@ -8,7 +8,7 @@ import { PDFDocument } from 'pdf-lib';
 
 interface EditorProps {
   files: File[];
-  onAddMoreFiles: () => void;
+  onAddMoreFiles: (newFiles: File[]) => void;
   onBack: () => void;
 }
 
@@ -67,6 +67,28 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleAddMoreFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles) return;
+    
+    const pdfFiles = Array.from(selectedFiles).filter(file => file.type === 'application/pdf');
+    
+    if (pdfFiles.length === 0) {
+      toast.error('Please select PDF files only');
+      return;
+    }
+    
+    if (pdfFiles.length !== selectedFiles.length) {
+      toast.error('Some files were ignored. Only PDF files are supported.');
+    }
+    
+    onAddMoreFiles(pdfFiles);
+    toast.success(`${pdfFiles.length} PDF file(s) added successfully`);
+    
+    // Reset the input value so the same files can be selected again if needed
+    e.target.value = '';
   };
 
   return (
@@ -131,8 +153,16 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <input
+                id="add-more-pdfs"
+                type="file"
+                accept=".pdf"
+                multiple
+                onChange={handleAddMoreFiles}
+                className="hidden"
+              />
               <Button
-                onClick={onAddMoreFiles}
+                onClick={() => document.getElementById('add-more-pdfs')?.click()}
                 variant="outline"
                 className="w-full"
               >

@@ -14,8 +14,8 @@ const Index = () => {
     setCurrentView('editor');
   };
 
-  const handleAddMoreFiles = () => {
-    setCurrentView('home');
+  const handleAddMoreFiles = (newFiles: File[]) => {
+    setSelectedFiles(prevFiles => [...prevFiles, ...newFiles]);
   };
 
   const handleBackToHome = () => {
