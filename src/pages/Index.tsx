@@ -24,6 +24,10 @@ const Index = () => {
     setSelectedFiles(newFiles);
   };
 
+  const handleReorderFiles = (reorderedFiles: File[]) => {
+    setSelectedFiles(reorderedFiles);
+  };
+
   const handleBackToHome = () => {
     setSelectedFiles([]);
     setCurrentView('home');
@@ -39,6 +43,7 @@ const Index = () => {
           files={selectedFiles}
           onAddMoreFiles={handleAddMoreFiles}
           onRemoveFile={handleRemoveFile}
+          onReorderFiles={handleReorderFiles}
           onBack={handleBackToHome}
         />
       )}

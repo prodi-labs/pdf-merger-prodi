@@ -3,9 +3,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/sonner';
-import { ArrowLeft, Download, FileText, Merge, Plus, X } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Merge, Plus, X, GripVertical } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Configure PDF.js with proper worker for Vite
 if (typeof window !== 'undefined') {
@@ -19,14 +37,117 @@ interface EditorProps {
   files: File[];
   onAddMoreFiles: (newFiles: File[]) => void;
   onRemoveFile: (index: number) => void;
+  onReorderFiles: (files: File[]) => void;
   onBack: () => void;
 }
 
-const Editor = ({ files, onAddMoreFiles, onRemoveFile, onBack }: EditorProps) => {
+// Sortable PDF Card Component
+interface SortablePDFCardProps {
+  file: File;
+  index: number;
+  preview: string;
+  onRemove: (index: number) => void;
+}
+
+const SortablePDFCard = ({ file, index, preview, onRemove }: SortablePDFCardProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: file.name + index });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card 
+      ref={setNodeRef} 
+      style={style} 
+      className={`overflow-hidden group relative hover:shadow-lg transition-shadow ${isDragging ? 'z-50' : ''}`}
+    >
+      <CardContent className="p-4">
+        {/* Drag handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-3 left-3 z-10 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-gray-50"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="h-3 w-3 text-gray-600" />
+        </div>
+
+        {/* Delete button - only visible on hover */}
+        <button
+          onClick={() => onRemove(index)}
+          className="absolute top-3 right-3 z-10 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:border-red-200"
+          aria-label={`Remove ${file.name}`}
+        >
+          <X className="h-3 w-3 text-gray-600 hover:text-red-600" />
+        </button>
+
+        {/* PDF Preview */}
+        <div className="aspect-[3/4] mb-3 bg-muted rounded border flex items-center justify-center overflow-hidden">
+          {preview ? (
+            <img
+              src={preview}
+              alt={`Preview of ${file.name}`}
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <FileText className="h-12 w-12 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Loading preview...</span>
+            </div>
+          )}
+        </div>
+        
+        {/* PDF Info */}
+        <div className="space-y-1">
+          <p className="font-medium text-sm truncate" title={file.name}>
+            {file.name}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {(file.size / (1024 * 1024)).toFixed(2)} MB • Position #{index + 1}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }: EditorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mergedPdfUrl, setMergedPdfUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [pdfPreviews, setPdfPreviews] = useState<{[key: string]: string}>({});
+
+  // Configure drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for reordering
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = files.findIndex((file, index) => file.name + index === active.id);
+      const newIndex = files.findIndex((file, index) => file.name + index === over.id);
+      
+      const reorderedFiles = arrayMove(files, oldIndex, newIndex);
+      onReorderFiles(reorderedFiles);
+      toast.success('PDFs reordered successfully');
+    }
+  };
 
   // Generate PDF previews when files change - render actual PDF pages
   useEffect(() => {
@@ -182,48 +303,31 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onBack }: EditorProps) =>
         <div className="lg:col-span-2">
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4">Selected PDF Files ({files.length})</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {files.map((file, index) => (
-                <Card key={index} className="overflow-hidden group relative hover:shadow-lg transition-shadow">
-                  <CardContent className="p-4">
-                    {/* Delete button - only visible on hover */}
-                    <button
-                      onClick={() => onRemoveFile(index)}
-                      className="absolute top-3 right-3 z-10 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:border-red-200"
-                      aria-label={`Remove ${file.name}`}
-                    >
-                      <X className="h-3 w-3 text-gray-600 hover:text-red-600" />
-                    </button>
-
-                    {/* PDF Preview */}
-                    <div className="aspect-[3/4] mb-3 bg-muted rounded border flex items-center justify-center overflow-hidden">
-                      {pdfPreviews[file.name] ? (
-                        <img
-                          src={pdfPreviews[file.name]}
-                          alt={`Preview of ${file.name}`}
-                          className="w-full h-full object-contain"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <FileText className="h-12 w-12 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Loading preview...</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* PDF Info */}
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm truncate" title={file.name}>
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {(file.size / (1024 * 1024)).toFixed(2)} MB • File #{index + 1}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Drag and drop to reorder • Files will be merged in this order
+            </p>
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={files.map((file, index) => file.name + index)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {files.map((file, index) => (
+                    <SortablePDFCard
+                      key={file.name + index}
+                      file={file}
+                      index={index}
+                      preview={pdfPreviews[file.name]}
+                      onRemove={onRemoveFile}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
 
