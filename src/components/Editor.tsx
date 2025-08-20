@@ -119,6 +119,49 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
   const [mergedPdfUrl, setMergedPdfUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [pdfPreviews, setPdfPreviews] = useState<{[key: string]: string}>({});
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // File drag and drop handlers
+  const handleFileDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleFileDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    // Only hide drop zone if cursor is completely outside the element
+    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleFileDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(
+      file => file.type === 'application/pdf'
+    );
+
+    if (droppedFiles.length > 0) {
+      onAddMoreFiles(droppedFiles);
+      toast.success(`Added ${droppedFiles.length} PDF file(s)`);
+    } else {
+      toast.error('Please drop only PDF files');
+    }
+  };
 
   // Configure drag and drop sensors
   const sensors = useSensors(
@@ -294,33 +337,66 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
       <div className="grid lg:grid-cols-3 gap-8">
         {/* PDF Previews */}
         <div className="lg:col-span-2">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">Selected PDF Files ({files.length})</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Drag and drop to reorder • Files will be merged in this order
-            </p>
-            <DndContext 
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext 
-                items={files.map((file, index) => file.name + index)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {files.map((file, index) => (
-                    <SortablePDFCard
-                      key={file.name + index}
-                      file={file}
-                      index={index}
-                      preview={pdfPreviews[file.name]}
-                      onRemove={onRemoveFile}
-                    />
-                  ))}
+          {/* Drop zone wrapper */}
+          <div 
+            onDragEnter={handleFileDragEnter}
+            onDragLeave={handleFileDragLeave}
+            onDragOver={handleFileDragOver}
+            onDrop={handleFileDrop}
+            className={`relative min-h-[400px] rounded-lg border-2 border-dashed transition-colors ${
+              isDragOver 
+                ? 'border-primary bg-primary/5 border-primary/50' 
+                : 'border-gray-200 bg-gray-50/50'
+            }`}
+          >
+            {/* Drop zone hint */}
+            {files.length === 0 || isDragOver ? (
+              <div className={`absolute inset-0 flex flex-col items-center justify-center z-10 transition-opacity ${
+                isDragOver ? 'opacity-100' : 'opacity-70'
+              }`}>
+                <div className="text-center p-8">
+                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">
+                    {isDragOver ? 'Drop PDFs here' : 'Drag and drop PDF files here'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Or use the "Add More PDFs" button to browse files
+                  </p>
                 </div>
-              </SortableContext>
-            </DndContext>
+              </div>
+            ) : null}
+            
+            {/* Existing content */}
+            <div className={`relative z-20 p-6 ${files.length === 0 ? 'opacity-0' : 'opacity-100'}`}>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-4">Selected PDF Files ({files.length})</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Drag and drop to reorder • Files will be merged in this order
+                </p>
+                <DndContext 
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext 
+                    items={files.map((file, index) => file.name + index)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {files.map((file, index) => (
+                        <SortablePDFCard
+                          key={file.name + index}
+                          file={file}
+                          index={index}
+                          preview={pdfPreviews[file.name]}
+                          onRemove={onRemoveFile}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+            </div>
           </div>
         </div>
 
