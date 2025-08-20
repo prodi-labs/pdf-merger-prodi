@@ -18,6 +18,12 @@ const Index = () => {
     setSelectedFiles(prevFiles => [...prevFiles, ...newFiles]);
   };
 
+  const handleRemoveFile = (index: number) => {
+    const newFiles = [...selectedFiles];
+    newFiles.splice(index, 1);
+    setSelectedFiles(newFiles);
+  };
+
   const handleBackToHome = () => {
     setSelectedFiles([]);
     setCurrentView('home');
@@ -32,6 +38,7 @@ const Index = () => {
         <Editor 
           files={selectedFiles}
           onAddMoreFiles={handleAddMoreFiles}
+          onRemoveFile={handleRemoveFile}
           onBack={handleBackToHome}
         />
       )}

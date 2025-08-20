@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/sonner';
-import { ArrowLeft, Download, FileText, Merge, Plus } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Merge, Plus, X } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -18,10 +18,11 @@ if (typeof window !== 'undefined') {
 interface EditorProps {
   files: File[];
   onAddMoreFiles: (newFiles: File[]) => void;
+  onRemoveFile: (index: number) => void;
   onBack: () => void;
 }
 
-const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
+const Editor = ({ files, onAddMoreFiles, onRemoveFile, onBack }: EditorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mergedPdfUrl, setMergedPdfUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -183,8 +184,17 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
             <h2 className="text-xl font-semibold mb-4">Selected PDF Files ({files.length})</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {files.map((file, index) => (
-                <Card key={index} className="overflow-hidden">
+                <Card key={index} className="overflow-hidden group relative hover:shadow-lg transition-shadow">
                   <CardContent className="p-4">
+                    {/* Delete button - only visible on hover */}
+                    <button
+                      onClick={() => onRemoveFile(index)}
+                      className="absolute top-3 right-3 z-10 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:border-red-200"
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <X className="h-3 w-3 text-gray-600 hover:text-red-600" />
+                    </button>
+
                     {/* PDF Preview */}
                     <div className="aspect-[3/4] mb-3 bg-muted rounded border flex items-center justify-center overflow-hidden">
                       {pdfPreviews[file.name] ? (
