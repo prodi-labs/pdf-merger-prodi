@@ -129,7 +129,6 @@ const SortablePDFCard = ({ file, index, preview, onRemove }: SortablePDFCardProp
 
 const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }: EditorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [mergedPdfUrl, setMergedPdfUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [pdfPreviews, setPdfPreviews] = useState<{[key: string]: string}>({});
   const [isDragOver, setIsDragOver] = useState(false);
@@ -283,11 +282,21 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
       const mergedPdfBytes = await mergedPdf.save();
       setProgress(100);
 
+      // Auto-download the merged PDF
       const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      setMergedPdfUrl(url);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'merged-document.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the object URL
+      URL.revokeObjectURL(url);
 
-      toast.success('PDFs merged successfully!');
+      toast.success('PDFs merged successfully and downloaded!');
     } catch (error) {
       console.error('Error merging PDFs:', error);
       toast.error('Failed to merge PDFs. Please try again.');
@@ -295,17 +304,6 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
       setIsProcessing(false);
       setProgress(0);
     }
-  };
-
-  const downloadMergedPDF = () => {
-    if (!mergedPdfUrl) return;
-    
-    const link = document.createElement('a');
-    link.href = mergedPdfUrl;
-    link.download = 'merged-document.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleAddMoreFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -452,35 +450,8 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
                 <Merge className="h-4 w-4 mr-2" />
                 {isProcessing ? 'Merging...' : 'Merge PDFs'}
               </Button>
-
-              {mergedPdfUrl && (
-                <Button
-                  onClick={downloadMergedPDF}
-                  variant="secondary"
-                  className="w-full"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Merged PDF
-                </Button>
-              )}
             </CardContent>
           </Card>
-
-          {mergedPdfUrl && (
-            <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="text-green-600 dark:text-green-400 mb-2">✅</div>
-                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                    PDFs merged successfully!
-                  </p>
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    Click the download button to save your merged document.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
