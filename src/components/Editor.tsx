@@ -5,8 +5,15 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/sonner';
 import { ArrowLeft, Download, FileText, Merge, Plus } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
 
-// Alternative approach - use PDF-lib for preview generation instead of pdfjs-dist
+// Configure PDF.js with proper worker for Vite
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).toString();
+}
 
 interface EditorProps {
   files: File[];
@@ -20,16 +27,24 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
   const [progress, setProgress] = useState(0);
   const [pdfPreviews, setPdfPreviews] = useState<{[key: string]: string}>({});
 
-  // Generate PDF previews when files change - using a simpler approach without pdfjs
+  // Generate PDF previews when files change - render actual PDF pages
   useEffect(() => {
     const generatePreviews = async () => {
       const previews: {[key: string]: string} = {};
       
       for (const file of files) {
         try {
-          console.log('Creating placeholder preview for:', file.name);
+          console.log('Generating actual PDF preview for:', file.name);
+          const arrayBuffer = await file.arrayBuffer();
           
-          // Create a simple placeholder preview using canvas
+          const loadingTask = pdfjsLib.getDocument({
+            data: arrayBuffer,
+            verbosity: 0 // Reduce console noise
+          });
+          
+          const pdf = await loadingTask.promise;
+          const page = await pdf.getPage(1);
+          
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
           if (!context) {
@@ -37,46 +52,27 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
             continue;
           }
           
-          // Set canvas size for a document-like preview
-          canvas.width = 200;
-          canvas.height = 280;
+          // Get viewport and scale it down for thumbnail
+          const viewport = page.getViewport({ scale: 1.0 });
+          const scale = Math.min(300 / viewport.width, 400 / viewport.height);
+          const scaledViewport = page.getViewport({ scale });
           
-          // Draw a simple document preview
-          context.fillStyle = '#ffffff';
-          context.fillRect(0, 0, canvas.width, canvas.height);
+          canvas.height = scaledViewport.height;
+          canvas.width = scaledViewport.width;
           
-          // Draw border
-          context.strokeStyle = '#e5e7eb';
-          context.lineWidth = 2;
-          context.strokeRect(0, 0, canvas.width, canvas.height);
+          // Render PDF page to canvas
+          const renderContext = {
+            canvasContext: context,
+            viewport: scaledViewport,
+            canvas: canvas
+          };
           
-          // Draw header area
-          context.fillStyle = '#f3f4f6';
-          context.fillRect(10, 10, canvas.width - 20, 40);
-          
-          // Draw content lines
-          context.fillStyle = '#d1d5db';
-          for (let i = 0; i < 8; i++) {
-            const y = 70 + i * 20;
-            context.fillRect(20, y, canvas.width - 40, 3);
-          }
-          
-          // Draw PDF icon in center
-          context.fillStyle = '#ef4444';
-          context.font = 'bold 24px Arial';
-          context.textAlign = 'center';
-          context.fillText('PDF', canvas.width / 2, canvas.height / 2);
-          
-          // Draw file name at bottom
-          context.fillStyle = '#374151';
-          context.font = '12px Arial';
-          const fileName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
-          context.fillText(fileName, canvas.width / 2, canvas.height - 15);
-          
-          previews[file.name] = canvas.toDataURL();
-          console.log('Successfully generated placeholder preview for:', file.name);
+          await page.render(renderContext).promise;
+          previews[file.name] = canvas.toDataURL('image/jpeg', 0.8);
+          console.log('Successfully generated PDF preview for:', file.name);
         } catch (error) {
-          console.error('Error generating preview for', file.name, error);
+          console.error('Error generating PDF preview for', file.name, error);
+          // Fallback to placeholder
           previews[file.name] = '';
         }
       }
