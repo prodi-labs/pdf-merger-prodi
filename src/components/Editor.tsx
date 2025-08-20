@@ -435,7 +435,7 @@ const Editor = ({ files, onAddMoreFiles, onRemoveFile, onReorderFiles, onBack }:
                 className="w-full"
               >
                 <Merge className="h-4 w-4 mr-2" />
-                {isProcessing ? 'Merging...' : 'Merge PDFs'}
+                Merge PDFs
               </Button>
             </CardContent>
           </Card>
