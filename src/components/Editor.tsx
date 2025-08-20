@@ -77,7 +77,10 @@ const SortablePDFCard = ({ file, index, preview, onRemove }: SortablePDFCardProp
 
         {/* Delete button - only visible on hover */}
         <button
-          onClick={() => onRemove(index)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(index);
+          }}
           className="absolute top-3 right-3 z-10 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:border-red-200"
           aria-label={`Remove ${file.name}`}
         >
