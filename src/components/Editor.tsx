@@ -79,10 +79,20 @@ const SortablePDFCard = ({ file, index, preview, onRemove }: SortablePDFCardProp
         <button
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             onRemove(index);
           }}
-          className="absolute top-3 right-3 z-10 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:border-red-200"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          className="absolute top-3 right-3 z-50 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:border-red-200 cursor-pointer"
           aria-label={`Remove ${file.name}`}
+          style={{ pointerEvents: 'auto' }}
         >
           <X className="h-3 w-3 text-gray-600 hover:text-red-600" />
         </button>
