@@ -7,10 +7,8 @@ import { ArrowLeft, Download, FileText, Merge, Plus } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker with a local approach to avoid CDN issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = `data:application/javascript;base64,${btoa(`
-  importScripts('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js');
-`)}`;
+// Disable worker for client-side rendering to avoid module issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
 interface EditorProps {
   files: File[];
@@ -31,14 +29,23 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
       
       for (const file of files) {
         try {
+          console.log('Generating preview for:', file.name);
           const arrayBuffer = await file.arrayBuffer();
-          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          
+          // Create loading task 
+          const loadingTask = pdfjsLib.getDocument({ 
+            data: arrayBuffer
+          });
+          
           const pdf = await loadingTask.promise;
           const page = await pdf.getPage(1);
           
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
-          if (!context) continue;
+          if (!context) {
+            console.error('Could not get canvas context for', file.name);
+            continue;
+          }
           
           const viewport = page.getViewport({ scale: 0.8 });
           canvas.height = viewport.height;
@@ -52,6 +59,7 @@ const Editor = ({ files, onAddMoreFiles, onBack }: EditorProps) => {
           
           await page.render(renderContext).promise;
           previews[file.name] = canvas.toDataURL();
+          console.log('Successfully generated preview for:', file.name);
         } catch (error) {
           console.error('Error generating preview for', file.name, error);
           // Set a fallback empty preview
