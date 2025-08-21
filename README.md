@@ -1,73 +1,47 @@
-# Welcome to your Lovable project
+# PDF Merger [By Prodi]
 
-## Project info
+A simple web application for merging multiple PDF files into a single document, built with a modern frontend stack.
 
-**URL**: https://lovable.dev/projects/014f4c2a-3651-470c-b5d0-2eb9b80cbb20
+## Architecture
 
-## How can I edit this code?
+This project is a single-page application built with:
 
-There are several ways of editing your application.
+- **Framework**: [React](https://react.dev/) with [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 
-**Use Lovable**
+## Local Development
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/014f4c2a-3651-470c-b5d0-2eb9b80cbb20) and start prompting.
+To run the application on your local machine, you'll need [Bun](https://bun.sh/) installed. Bun is used by lovable. 
 
-Changes made via Lovable will be committed automatically to this repo.
+1.  **Clone the repository:**
+    ```sh
+    git clone <YOUR_GIT_URL>
+    cd pdf-merger
+    ```
 
-**Use your preferred IDE**
+2.  **Install dependencies:**
+    ```sh
+    bun install
+    ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3.  **Run the development server:**
+    ```sh
+    bun run dev
+    ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Running with Docker
 
-Follow these steps:
+The application is containerized for easy deployment and consistent environments.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1.  **Build the Docker image:**
+    ```sh
+    docker build -t pdf-merger .
+    ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/014f4c2a-3651-470c-b5d0-2eb9b80cbb20) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+2.  **Run the container:**
+    ```sh
+    docker run -d -p 8080:8080 --name pdf-merger-app pdf-merger
+    ```
+    The application will be accessible at `http://localhost:8080`. This is the recommended method for deployment on platforms like Google Cloud Run.
