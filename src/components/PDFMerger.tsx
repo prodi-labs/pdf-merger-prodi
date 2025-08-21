@@ -21,6 +21,13 @@ const PDFMerger = () => {
       return;
     }
     
+    // Check file size limit (10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+    
     if (isFirst) {
       setFirstPdf(file);
     } else {
