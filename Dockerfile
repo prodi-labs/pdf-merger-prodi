@@ -25,7 +25,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # This ensures that refreshing a page or navigating directly to a URL like /editor works correctly.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80 to the outside world
+# Expose port 8080 to the outside world
 EXPOSE 8080
 
 # Command to start Nginx in the foreground
