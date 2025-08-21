@@ -24,6 +24,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Add a custom Nginx configuration to handle client-side routing for SPAs
 # This ensures that refreshing a page or navigating directly to a URL like /editor works correctly.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY mjs.conf /etc/nginx/conf.d/mjs.conf
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
